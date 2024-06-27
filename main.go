@@ -6,7 +6,6 @@ import (
 	"os"
 
 	"github.com/Qu-Ack/pokedexcli/clicommands"
-	"github.com/Qu-Ack/pokedexcli/pokeapirequest"
 )
 
 
@@ -22,9 +21,18 @@ func main() {
 				switch text {
 				case "help":
 						commandMap["help"].Callback()
-						pokeapirequest.PokeLocationGet()
 				case "exit":
 						break MainLoop
+				case "map":
+						err :=	commandMap["map"].Callback()
+						if err != nil {
+								fmt.Println(err)
+						}
+				case "mapb":
+						err := commandMap["mapb"].Callback()
+						if err != nil {
+								fmt.Println(err)
+						}
 				default:
 						fmt.Println("Invalid Command")
 				} 

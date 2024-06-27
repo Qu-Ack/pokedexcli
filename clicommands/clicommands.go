@@ -1,7 +1,11 @@
 package clicommands
 
+import (
+	"errors"
+	"fmt"
 
-import "fmt"
+	"github.com/Qu-Ack/pokedexcli/pokeapirequest"
+)
 
 
 type clicommand struct {
@@ -25,9 +29,21 @@ func InitMap() map[string]clicommand{
 				description: "exit: exit the pokedex",
 				Callback: CommandExit,
 		}
+		mapCommand := clicommand{
+				name: "map",
+				description: "map: returns the first 20 locations in the Pokemon world. Each subsequent call will display next 20 locations",
+				Callback: commandMap,
+				
+		}
+		mapBCommand := clicommand{
+				name: "mapb",
+				description: "mapb: returns the previous 20 locations which map returned",
+				Callback: commandBMap,
+		}
 		commands["help"] = helpCommand 
 		commands["exit"] = exitCommand
-
+		commands["map"] = mapCommand
+		commands["mapb"] = mapBCommand
 
 		return commands
 }
@@ -51,3 +67,22 @@ func CommandExit() error {
 		return nil
 }
 
+func commandMap() error {
+		err := pokeapirequest.PokeLocationGet()		
+		if err != nil {
+				return errors.New(fmt.Sprintf("%v", err))
+		}
+		return nil
+
+
+
+} 
+
+func commandBMap() error {
+		err := pokeapirequest.PokePrevLocationGet()
+		if err != nil {
+				return errors.New(fmt.Sprintf("%v", err))
+				
+		}
+		return nil
+}
