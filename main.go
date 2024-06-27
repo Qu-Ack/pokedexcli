@@ -22,7 +22,7 @@ func main() {
 				switch text {
 				case "help":
 						commandMap["help"].Callback()
-						pokeapirequest.ApiRequest("https://pokeapi.co/api/v2/location/1")	
+						pokeapirequest.PokeLocationGet()
 				case "exit":
 						break MainLoop
 				default:
