@@ -1,12 +1,12 @@
 package pokeapirequest
 
 import (
-	"encoding/json"
-	"errors"
-	"fmt"
-	"io"
-	"net/http"
-	"sync"
+		"encoding/json"
+		"errors"
+		"fmt"
+		"io"
+		"net/http"
+		"sync"
 
 )
 
@@ -114,6 +114,9 @@ func PokePrevLocationGet() error {
 				return errors.New("can't go back")
 		}
 
+		var wg sync.WaitGroup
+		errChan := make(chan error)
+
 		location.start = location.start - 10
 		location.end = location.end - 10
 
@@ -121,17 +124,30 @@ func PokePrevLocationGet() error {
 				if i == 21 {
 						continue
 				}
-				resLocation, err := apiRequest(fmt.Sprintf("https://pokeapi.co/api/v2/location/%v", i))
+				wg.Add(1)
+				go func(i int) {
+						defer wg.Done()
+						resLocation, err := apiRequest(fmt.Sprintf("https://pokeapi.co/api/v2/location/%v", i))
+						if err != nil {
+								errChan <- err
+						}
+						result := pokelocation{}
+						jerr := jsonConvert(resLocation, &result)
+						if jerr != nil {
+								errChan <- err
+						}
+						fmt.Println(result.Name)
+				}(i)
+
+
+		}
+		wg.Wait()
+		close(errChan)
+
+		for err := range errChan {
 				if err != nil {
 						return err
 				}
-				result := pokelocation{}
-				jerr := jsonConvert(resLocation, &result)
-				if jerr != nil {
-						return err
-				}
-				fmt.Println(result.Name)
-
 		}
 		return nil
 
