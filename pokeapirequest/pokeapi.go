@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"sync"
+
 )
 
 
@@ -15,16 +17,16 @@ type conf struct {
 }
 
 type pokelocation struct {
-	Name  string `json:"name"`
-	Region struct {
-		Name string `json:"name"`
-	} `json:"region"`
+		Name  string `json:"name"`
+		Region struct {
+				Name string `json:"name"`
+		} `json:"region"`
 
 }
 
 var location = conf{
-		start: 1,
-		end: 1,
+		start: -9,
+		end: 0,
 }
 
 
@@ -36,8 +38,8 @@ func apiRequest(url string) ([]byte, error) {
 		}
 		body , err := io.ReadAll(res.Body)
 		res.Body.Close()
-		
-		
+
+
 
 		if res.StatusCode > 299 {
 				return nil,errors.New(fmt.Sprintf("response failed with status code : %v ", res.StatusCode))
@@ -58,36 +60,57 @@ func jsonConvert[D any](data []byte, target *D) error {
 
 
 func PokeLocationGet() error {
+		var wg sync.WaitGroup
+		errChan := make(chan error)
+
+		location.start = location.start + 10
+		location.end = location.end + 10
 		// can use go routines to maybe speed it up ? ??? 
 		for i:= location.start ; i <= location.end; i++ {
 
 				if i == 21 {
 						continue
 				}
-				resLocation, err := apiRequest(fmt.Sprintf("https://pokeapi.co/api/v2/location/%v", i))
+				wg.Add(1)
+				go func(i int) {
+						defer wg.Done()
+						resLocation, err :=  apiRequest(fmt.Sprintf("https://pokeapi.co/api/v2/location/%v", i))
+						if err != nil {
+								errChan <- err	
+								return
+						}
+
+						result := pokelocation{}
+						jerr := jsonConvert(resLocation, &result)
+						if jerr != nil {
+								errChan <- err
+								return
+						}
+						fmt.Println(result.Name)
+				}(i)
+
+		}
+		wg.Wait()
+		close(errChan)
+
+		for err := range errChan {
 				if err != nil {
 						return err
 				}
-				result := pokelocation{}
-				jerr := jsonConvert(resLocation, &result)
-				if jerr != nil {
-						return err
-				}
-				fmt.Println(result.Name)
-
 		}
-		location.start = location.start + 10
-		location.end = location.start + 10
+
+
+
 		return nil
 
 
-		
+
 }
 
 
 
 func PokePrevLocationGet() error {
-		if location.start == 1 {
+		if location.start <= 1 {
 				return errors.New("can't go back")
 		}
 
