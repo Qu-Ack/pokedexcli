@@ -29,12 +29,18 @@ func Get(key string) cacheEntry {
 		return cache[key] 
 }
 
-func ReapLoop(interval int) {
+func ReapLoop(interval time.Duration) {
 		ticker := time.NewTicker(time.Second)				
-		fmt.Println(interval)
 		for {
 				t:= ticker.C
-				fmt.Printf("the time is : %v" , t)
+				time := <-t
+				for key, entry := range cache {
+						duration := time.Sub(entry.createdAt)
+						if interval - duration < 0 {
 
+								delete(cache , key)	
+						}
+				}	
+						
 		}
 }
