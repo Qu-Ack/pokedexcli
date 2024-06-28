@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/Qu-Ack/pokedexcli/pokeapirequest"
+	"github.com/Qu-Ack/pokedexcli/pokecache"
 )
 
 
@@ -60,6 +61,8 @@ func commandHelp(commands map[string]clicommand) error {
 		} 
 		fmt.Println("")
 		fmt.Println("")
+		
+		pokecache.ReapLoop(10)
 		return nil
 }
 

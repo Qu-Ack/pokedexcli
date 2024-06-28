@@ -1,6 +1,9 @@
 package pokecache
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 
 type cacheEntry struct {
@@ -8,20 +11,30 @@ type cacheEntry struct {
 		val []byte
 }
 
+var cache = make(map[string]cacheEntry)
 func InitCache() map[string]cacheEntry {
-		cache := make(map[string]cacheEntry)
 		return cache
 }
 
 
-func Add() {
-
+func Add(key string, value []byte) error {
+		cache[key] = cacheEntry{
+				createdAt: time.Now(),
+				val: value,
+		}	
+		return nil
 }
 
-func Get() {
-
+func Get(key string) cacheEntry {
+		return cache[key] 
 }
 
-func ReapLoop() {
+func ReapLoop(interval int) {
+		ticker := time.NewTicker(time.Second)				
+		fmt.Println(interval)
+		for {
+				t:= ticker.C
+				fmt.Printf("the time is : %v" , t)
 
+		}
 }
