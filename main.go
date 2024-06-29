@@ -46,6 +46,22 @@ func main() {
 						if err != nil {
 								fmt.Println(err)
 						}
+				case "catch": 
+						err := commandMap["catch"].Callback(argument)
+						if err != nil {
+								fmt.Println(err)
+						}
+				case "inspect":
+						err := commandMap["inspect"].Callback(argument)
+						if err != nil {
+								fmt.Println(err)
+						}
+
+				case "pokedex":
+						err := commandMap["pokedex"].Callback()
+						if err != nil {
+								fmt.Println(err)
+						}
 				default:
 						fmt.Println("Invalid Command")
 				} 

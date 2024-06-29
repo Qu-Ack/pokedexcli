@@ -1,14 +1,15 @@
 package pokeapirequest
 
 import (
-		"encoding/json"
-		"errors"
-		"fmt"
-		"io"
-		"net/http"
-		"sync"
-		"github.com/Qu-Ack/pokedexcli/pokecache"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"math/rand"
+	"net/http"
+	"sync"
 
+	"github.com/Qu-Ack/pokedexcli/pokecache"
 )
 
 
@@ -17,6 +18,19 @@ type conf struct {
 		start int
 		end int
 }
+
+type Pokestats struct {
+		Name string `json:"name"`
+		BaseExperience int `json:"base_experience"`
+		Height int `json:"height"`
+		Stats []struct {
+				BaseStat int `json:"base_stat"`
+				Effort int `json:"effort"`
+		} `json:"stats"`
+		Weight int `json:"weight"`
+}
+
+
 
 type pokelocation struct {
 		Name  string `json:"name"`
@@ -33,6 +47,8 @@ type pokename struct {
 				} `json:"pokemon"`
 		} `json:"pokemon_encounters"`
 }
+
+var Pokedex = make(map[string]Pokestats)
 
 var location = conf{
 		start: -9,
@@ -70,6 +86,10 @@ func jsonConvert[D any](data []byte, target *D) error {
 		return err
 }
 
+func GetPokeStats(pokemon string) Pokestats {
+		return Pokedex[pokemon]
+}
+
 
 func PokePokemonGet(city string) error {
 		value , ok := pokecache.Cache[city]
@@ -103,8 +123,47 @@ func PokePokemonGet(city string) error {
 						fmt.Printf(" - %v\n", elem.Pokemon.Name)
 				}
 				return nil
+		}
 }
+
+
+func canCatch(baseexp int) bool {
+		chance := rand.Intn(baseexp)
+		if chance < 50 {
+				return true
+		}
+		return false
 }
+
+
+func PokeCatch(pokemon string) error {
+		response , err := apiRequest(fmt.Sprintf("https://pokeapi.co/api/v2/pokemon/%v", pokemon))
+		if err != nil {
+				return err
+		} 
+		pokestats := Pokestats{}
+		jerr := jsonConvert(response, &pokestats)
+		if jerr != nil {
+				return jerr
+		}
+		value , ok := Pokedex[pokestats.Name]
+		if ok {
+				fmt.Printf("you have already caught %v pokemon\n", value.Name)
+		} else {
+				catchChance := canCatch(pokestats.BaseExperience)
+				if catchChance {
+						Pokedex[pokestats.Name] = pokestats
+						fmt.Printf("%v was caught\n" , pokestats.Name)
+				} else {
+						fmt.Printf("%v escaped\n", pokestats.Name)
+				}
+				return nil
+		}
+		return nil
+
+}
+
+
 
 
 func PokeLocationGet() error {

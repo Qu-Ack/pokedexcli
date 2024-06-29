@@ -46,12 +46,30 @@ func InitMap() map[string]clicommand{
 				Callback:commandExplore, 
 				
 		}
+		catchCommand := clicommand{
+				name:"catch", 
+				description: "catch: takes the pokemon as the argument and based on a chance catches it",
+				Callback: commandCatch,
+		}
+		inspectCommand := clicommand{
+				name:"inspect",
+				description: "inspect: takes the pokemon as the argument and show it's stats",
+				Callback: commandInspect,
+		}
+		pokedexCommand := clicommand{
+				name:"pokedex",
+				description: "pokedex: displays all the pokemons you have caught yet",
+				Callback: commandPokedex,
+		}
+		
 		commands["help"] = helpCommand 
 		commands["exit"] = exitCommand
 		commands["map"] = mapCommand
 		commands["mapb"] = mapBCommand
 		commands["explore"] = exploreCommand
-
+		commands["catch"] = catchCommand
+		commands["inspect"] = inspectCommand
+		commands["pokedex"] = pokedexCommand
 		return commands
 }
 
@@ -106,6 +124,43 @@ func commandExplore(args ...string) error {
 		err := pokeapirequest.PokePokemonGet(cityname)
 		if err != nil {
 				return err
+		}
+		return nil
+}
+
+
+func commandCatch(args ...string) error {
+		if len(args) < 1 {
+				return errors.New("Not Enough arguments")
+		}
+		pokename := args[0]
+		fmt.Printf("throwing a pokeball at %v", pokename)
+		fmt.Println("")
+		err := pokeapirequest.PokeCatch(pokename)
+		if err != nil {
+				return err
+		}
+		return nil
+}
+
+func commandInspect(args ...string ) error {
+		if len(args)  < 1 {
+				return errors.New("Not enought arguments")
+		}
+		pokename := args[0]
+		pokeStats := pokeapirequest.GetPokeStats(pokename)	
+		fmt.Println(fmt.Sprintf("Name : %v", pokeStats.Name))
+		fmt.Println(fmt.Sprintf("Base Exp: %v", pokeStats.BaseExperience))
+		fmt.Println(fmt.Sprintf("Height : %v" , pokeStats.Height))
+		fmt.Println(fmt.Sprintf("Weight : %v" , pokeStats.Weight))
+
+		return nil
+}
+
+func commandPokedex(args ...string) error {
+		fmt.Println("Your Pokedex: ")
+		for name , _ := range pokeapirequest.Pokedex {
+				fmt.Println(fmt.Sprintf(" -%v", name))
 		}
 		return nil
 }
