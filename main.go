@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/Qu-Ack/pokedexcli/clicommands"
 )
@@ -18,7 +19,14 @@ func main() {
 		for scanner.Scan() {
 
 				text:= scanner.Text()
-				switch text {
+				parts := strings.SplitN(text, " " , 2)
+				command := parts[0]
+				argument := ""
+				if len(parts) > 1 {
+						argument = parts[1]
+				}
+
+				switch command {
 				case "help":
 						commandMap["help"].Callback()
 				case "exit":
@@ -30,6 +38,11 @@ func main() {
 						}
 				case "mapb":
 						err := commandMap["mapb"].Callback()
+						if err != nil {
+								fmt.Println(err)
+						}
+				case "explore": 
+						err := commandMap["explore"].Callback(argument)
 						if err != nil {
 								fmt.Println(err)
 						}

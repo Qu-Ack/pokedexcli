@@ -11,7 +11,7 @@ import (
 type clicommand struct {
 		name string
 		description string
-		Callback func() error
+		Callback func(args ...string) error
 }
 
 func InitMap() map[string]clicommand{
@@ -19,7 +19,7 @@ func InitMap() map[string]clicommand{
 		helpCommand := clicommand{
 				name: "help",
 				description: "help: display help for pokedex",
-				Callback: func() error {
+				Callback: func(args ...string) error {
 						return commandHelp(commands)
 				},
 
@@ -40,10 +40,17 @@ func InitMap() map[string]clicommand{
 				description: "mapb: returns the previous 20 locations which map returned",
 				Callback: commandBMap,
 		}
+		exploreCommand := clicommand {
+				name: "explore",
+				description: "explore: takes the city as the argument and returns the pokemons in that area",
+				Callback:commandExplore, 
+				
+		}
 		commands["help"] = helpCommand 
 		commands["exit"] = exitCommand
 		commands["map"] = mapCommand
 		commands["mapb"] = mapBCommand
+		commands["explore"] = exploreCommand
 
 		return commands
 }
@@ -64,11 +71,11 @@ func commandHelp(commands map[string]clicommand) error {
 		return nil
 }
 
-func CommandExit() error {
+func CommandExit(args ...string) error {
 		return nil
 }
 
-func commandMap() error {
+func commandMap(args ...string) error {
 		err := pokeapirequest.PokeLocationGet()		
 		if err != nil {
 				return errors.New(fmt.Sprintf("%v", err))
@@ -79,11 +86,26 @@ func commandMap() error {
 
 } 
 
-func commandBMap() error {
+func commandBMap(args ...string) error {
 		err := pokeapirequest.PokePrevLocationGet()
 		if err != nil {
 				return errors.New(fmt.Sprintf("%v", err))
 				
+		}
+		return nil
+
+}
+
+
+func commandExplore(args ...string) error {
+		if len(args) < 1 {
+				return errors.New("Not Enough arguments")
+		}
+		fmt.Println("exploring pokemon ...")
+		cityname := args[0]
+		err := pokeapirequest.PokePokemonGet(cityname)
+		if err != nil {
+				return err
 		}
 		return nil
 }

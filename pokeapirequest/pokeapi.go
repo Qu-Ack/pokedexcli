@@ -26,6 +26,14 @@ type pokelocation struct {
 
 }
 
+type pokename struct {
+		PokemonEncounters []struct {
+				Pokemon struct {
+						Name string `json:"name"`
+				} `json:"pokemon"`
+		} `json:"pokemon_encounters"`
+}
+
 var location = conf{
 		start: -9,
 		end: 0,
@@ -41,7 +49,9 @@ func apiRequest(url string) ([]byte, error) {
 		body , err := io.ReadAll(res.Body)
 		res.Body.Close()
 
-
+		if res.StatusCode == 404 {
+				return nil, errors.New("404")
+		}
 
 		if res.StatusCode > 299 {
 				return nil,errors.New(fmt.Sprintf("response failed with status code : %v ", res.StatusCode))
@@ -58,6 +68,42 @@ func apiRequest(url string) ([]byte, error) {
 func jsonConvert[D any](data []byte, target *D) error {
 		err:= json.Unmarshal(data, target)
 		return err
+}
+
+
+func PokePokemonGet(city string) error {
+		value , ok := pokecache.Cache[city]
+		mu := &sync.Mutex{}
+		if ok {
+				pokemon := pokename{}
+				err:= jsonConvert(value.Val, &pokemon)
+				if err != nil {
+						return err 
+				}
+				for _, elem := range pokemon.PokemonEncounters {
+						fmt.Printf(" - %v\n", elem.Pokemon.Name)
+				}
+				return nil
+		}  else {
+				response , err  := apiRequest(fmt.Sprintf("https://pokeapi.co/api/v2/location-area/%v", city))
+				if err != nil {
+						if err.Error() == "404" {
+								return errors.New("no such area exists")
+						} else {
+								return err
+						}
+				}
+				pokecache.Add(city, response, mu)
+				pokemon := pokename{}
+				jerr := jsonConvert(response, &pokemon)	
+				if jerr != nil {
+						return jerr
+				}
+				for _, elem := range pokemon.PokemonEncounters {
+						fmt.Printf(" - %v\n", elem.Pokemon.Name)
+				}
+				return nil
+}
 }
 
 
@@ -86,7 +132,7 @@ func PokeLocationGet() error {
 						wg.Add(1)
 						go func(i int) {
 								defer wg.Done()
-								resLocation, err :=  apiRequest(fmt.Sprintf("https://pokeapi.co/api/v2/location/%v", i))
+								resLocation, err :=  apiRequest(fmt.Sprintf("https://pokeapi.co/api/v2/location-area/%v", i))
 								if err != nil {
 										errChan <- err	
 										return
