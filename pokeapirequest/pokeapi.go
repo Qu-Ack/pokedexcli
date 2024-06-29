@@ -7,8 +7,10 @@ import (
 		"io"
 		"net/http"
 		"sync"
+		"github.com/Qu-Ack/pokedexcli/pokecache"
 
 )
+
 
 
 type conf struct {
@@ -62,32 +64,45 @@ func jsonConvert[D any](data []byte, target *D) error {
 func PokeLocationGet() error {
 		var wg sync.WaitGroup
 		errChan := make(chan error)
-
+		pokecache.ReapLoop(30000000000)
+		mu := &sync.Mutex{}
 		location.start = location.start + 10
 		location.end = location.end + 10
-		// can use go routines to maybe speed it up ? ??? 
 		for i:= location.start ; i <= location.end; i++ {
 
 				if i == 21 {
 						continue
 				}
-				wg.Add(1)
-				go func(i int) {
-						defer wg.Done()
-						resLocation, err :=  apiRequest(fmt.Sprintf("https://pokeapi.co/api/v2/location/%v", i))
+				cacheEntry , ok := pokecache.Cache[string(i)]
+				if ok {
+						result := pokelocation{}
+						err := jsonConvert(cacheEntry.Val, &result)
 						if err != nil {
-								errChan <- err	
-								return
+								return err
 						}
 
-						result := pokelocation{}
-						jerr := jsonConvert(resLocation, &result)
-						if jerr != nil {
-								errChan <- err
-								return
-						}
 						fmt.Println(result.Name)
-				}(i)
+				} else {
+						wg.Add(1)
+						go func(i int) {
+								defer wg.Done()
+								resLocation, err :=  apiRequest(fmt.Sprintf("https://pokeapi.co/api/v2/location/%v", i))
+								if err != nil {
+										errChan <- err	
+										return
+								}
+								pokecache.Add(string(i), resLocation, mu)
+								result := pokelocation{}
+								jerr := jsonConvert(resLocation, &result)
+								if jerr != nil {
+										errChan <- err
+										return
+								}
+								fmt.Println(result.Name)
+						}(i)
+				}
+
+
 
 		}
 		wg.Wait()
@@ -113,6 +128,7 @@ func PokePrevLocationGet() error {
 		if location.start <= 1 {
 				return errors.New("can't go back")
 		}
+		mu := &sync.Mutex{}
 
 		var wg sync.WaitGroup
 		errChan := make(chan error)
@@ -124,21 +140,33 @@ func PokePrevLocationGet() error {
 				if i == 21 {
 						continue
 				}
-				wg.Add(1)
-				go func(i int) {
-						defer wg.Done()
-						resLocation, err := apiRequest(fmt.Sprintf("https://pokeapi.co/api/v2/location/%v", i))
-						if err != nil {
-								errChan <- err
-						}
+				cacheEntry , ok := pokecache.Cache[string(i)]
+				if ok {
 						result := pokelocation{}
-						jerr := jsonConvert(resLocation, &result)
-						if jerr != nil {
-								errChan <- err
+						err := jsonConvert(cacheEntry.Val , &result) 
+						if err != nil {
+								return err
 						}
 						fmt.Println(result.Name)
-				}(i)
 
+				} else {
+
+						wg.Add(1)
+						go func(i int) {
+								defer wg.Done()
+								resLocation, err := apiRequest(fmt.Sprintf("https://pokeapi.co/api/v2/location/%v", i))
+								if err != nil {
+										errChan <- err
+								}
+								pokecache.Add(string(i), resLocation, mu)
+								result := pokelocation{}
+								jerr := jsonConvert(resLocation, &result)
+								if jerr != nil {
+										errChan <- err
+								}
+								fmt.Println(result.Name)
+						}(i)
+				}
 
 		}
 		wg.Wait()
